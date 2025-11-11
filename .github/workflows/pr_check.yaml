@@ -1,0 +1,30 @@
+name: "PR Check"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Test-The-Application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the Repository
+        uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+      
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+          
+      - name: Bulid with Maven
+        run: mvn clean install

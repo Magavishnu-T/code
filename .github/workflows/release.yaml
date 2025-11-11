@@ -1,0 +1,23 @@
+# name: Version Release Yaml
+
+# on:
+#   release:
+    
+name: Build and Push on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t myapp:${{ github.event.release.tag_name }} .
+
+      - name: Push image
+        run: echo "Pushing image for tag ${{ github.event.release.tag_name }}"
