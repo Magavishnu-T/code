@@ -27,4 +27,4 @@ jobs:
             ${{ runner.os }}-maven-
           
       - name: Bulid with Maven
-        run: mvn clean install
+        run: mvn clean install 
