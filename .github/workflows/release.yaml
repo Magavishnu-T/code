@@ -1,23 +1,81 @@
-# name: Version Release Yaml
+name: Version Up Release Yaml
+
+on:
+  push:
+   branches:
+     - main
+
+jobs:
+  publish-and-create-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get the tag
+        id: get_tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: bump_tag
+        run: |
+          latest_tag=${{ steps.get_tag_outputs.latest_tag }}
+          IFS='.' read -r -a parts <<< "${latest_tag#v}"
+          new_tag="v${parts[0]}.${parts[1]}.$((parts[2] + 1))"
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
+      - name: Push the created new tag to remote github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag ${{ steps.bump_tag.outputs.new_tag }}
+          git push tag ${{ steps.bump_tag.outputs.new_tag }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.0
+        with:
+          role-to-assume: arn:aws:iam::888245942120:role/github-action-role
+          role-session-name: samplerolesession
+          aws-region: ap-south-1
+      
+      - name: Login to Amazon ECR Public Repository
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push docker image to Amazon ECR Public
+        env: 
+          REGISTRY_TYPE: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY_NAME: learning/terraform
+          IMAGE_TAG: ${{ steps.bump_tag.outputs.new_tag }}
+        run: |
+          echo "Full Name: $REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG ."
+          docker build -t "$REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG" .
+          docker push "$REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG"
+
+
+
+
+
+# name: Build and Push on Release
 
 # on:
 #   release:
-    
-name: Build and Push on Release
+#     types: [published]
 
-on:
-  release:
-    types: [published]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#       - name: Build Docker image
+#         run: docker build -t myapp:${{ github.event.release.tag_name }} .
 
-      - name: Build Docker image
-        run: docker build -t myapp:${{ github.event.release.tag_name }} .
-
-      - name: Push image
-        run: echo "Pushing image for tag ${{ github.event.release.tag_name }}"
+#       - name: Push image
+#         run: echo "Pushing image for tag ${{ github.event.release.tag_name }}"
