@@ -44,53 +44,18 @@ jobs:
           aws-region: ap-south-1
       
       - name: Login to Amazon ECR Public Repository
-        id: login-ecr-public
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push docker image to Amazon ECR Public
         env: 
-          REGISTRY_TYPE: ${{ steps.login-ecr-public.outputs.registry }}
-          REPOSITORY_NAME: ${{ secrets.AWS_ECR_REPO_NAME }}
+          REGISTRY_TYPE: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY_NAME: learning/terraform
           IMAGE_TAG: ${{ steps.bump_tag.outputs.new_tag }}
         run: |
           echo "Full Name: $REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG ."
           docker build -t "$REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG" .
           docker push "$REGISTRY_TYPE/$REPOSITORY_NAME:$IMAGE_TAG"
-
-
-      
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
